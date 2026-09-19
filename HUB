@@ -1,0 +1,261 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+local StarterGui = game:GetService("StarterGui")
+
+local lp = Players.LocalPlayer
+local pg = lp:WaitForChild("PlayerGui")
+
+local LOAD_TIME = 4
+local HUB_TEXT = "RED BLACK HUB"
+local LOGO_IDS = {
+    "rbxassetid://116836698110493",
+    "rbxassetid://91667192204008"
+}
+local LOADING_TEXTS = {"Loading...", "Loading MM2 modules...", "Launching Hub..."}
+
+local MM2_SCRIPT_URL = "https://raw.githubusercontent.com/THEMRREDBLACK/RED-BLACK-HUB-MM2/refs/heads/main/README.md"
+
+for _, g in ipairs(pg:GetChildren()) do
+    if g:IsA("ScreenGui") and g.Name:lower():find("rbh") then
+        g:Destroy()
+    end
+end
+
+local function notifyRoblox(title, text, duration)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = duration or 8
+        })
+    end)
+end
+
+local blur = Instance.new("BlurEffect", Lighting)
+blur.Size = 0
+TweenService:Create(blur, TweenInfo.new(0.4), {Size = 24}):Play()
+
+local gui = Instance.new("ScreenGui", pg)
+gui.Name = "RBH_LOADER"
+gui.DisplayOrder = 9999
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(1, 0, 1, 0)
+frame.Position = UDim2.new(0, 0, 0, 0)
+frame.BackgroundColor3 = Color3.fromRGB(5, 5, 5)
+frame.BorderSizePixel = 0
+frame.ClipsDescendants = true
+
+local bgGradient = Instance.new("UIGradient", frame)
+bgGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 0, 0)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(5, 5, 5)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 0, 0))
+})
+bgGradient.Rotation = 45
+
+local particlesContainer = Instance.new("Frame", frame)
+particlesContainer.Size = UDim2.new(1, 0, 1, 0)
+particlesContainer.BackgroundTransparency = 1
+particlesContainer.ZIndex = 2
+
+local function spawnParticle()
+    if not frame.Parent then return end
+    
+    local particle = Instance.new("Frame", particlesContainer)
+    local size = math.random(8, 18)
+    particle.Size = UDim2.new(0, size, 0, size)
+    particle.BackgroundColor3 = Color3.fromRGB(math.random(200, 255), math.random(0, 30), math.random(0, 30))
+    particle.BorderSizePixel = 0
+    Instance.new("UICorner", particle).CornerRadius = UDim.new(1, 0)
+    
+    local edge = math.random(1, 4)
+    local startX, startY
+    
+    if edge == 1 then
+        startX = -0.05
+        startY = math.random()
+    elseif edge == 2 then
+        startX = 1.05
+        startY = math.random()
+    elseif edge == 3 then
+        startX = math.random()
+        startY = -0.05
+    else
+        startX = math.random()
+        startY = 1.05
+    end
+    
+    particle.Position = UDim2.new(startX, 0, startY, 0)
+
+    local endX = 0.5 + math.random(-25, 25) / 100
+    local endY = 0.5 + math.random(-25, 25) / 100
+    local travelTime = math.random(20, 35) / 10
+
+    local stroke = Instance.new("UIStroke", particle)
+    stroke.Color = Color3.fromRGB(255, 30, 30)
+    stroke.Thickness = 2
+    stroke.Transparency = 0.2
+    
+    TweenService:Create(particle, TweenInfo.new(travelTime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Position = UDim2.new(endX, 0, endY, 0),
+        BackgroundTransparency = 1
+    }):Play()
+    
+    TweenService:Create(stroke, TweenInfo.new(travelTime), {
+        Transparency = 1
+    }):Play()
+    
+    task.delay(travelTime, function()
+        particle:Destroy()
+    end)
+end
+
+task.spawn(function()
+    while frame.Parent do
+        spawnParticle()
+        task.wait(0.04)
+    end
+end)
+
+local centerContent = Instance.new("Frame", frame)
+centerContent.Size = UDim2.new(0, 800, 0, 550)
+centerContent.Position = UDim2.new(0.5, 0, 0.5, 0)
+centerContent.AnchorPoint = Vector2.new(0.5, 0.5)
+centerContent.BackgroundTransparency = 1
+centerContent.ZIndex = 5
+
+local logo = Instance.new("ImageLabel", centerContent)
+logo.Size = UDim2.new(0, 240, 0, 240)
+logo.Position = UDim2.new(0.5, 0, 0, 0)
+logo.AnchorPoint = Vector2.new(0.5, 0)
+logo.BackgroundTransparency = 1
+logo.Image = LOGO_IDS[1]
+logo.ZIndex = 6
+
+task.spawn(function()
+    local currentImageIndex = 1
+    while logo.Parent do
+        task.wait(1.5)
+        currentImageIndex = (currentImageIndex % #LOGO_IDS) + 1
+        
+        TweenService:Create(logo, TweenInfo.new(0.15), {ImageTransparency = 1}):Play()
+        task.wait(0.15)
+        logo.Image = LOGO_IDS[currentImageIndex]
+        TweenService:Create(logo, TweenInfo.new(0.15), {ImageTransparency = 0}):Play()
+    end
+end)
+
+task.spawn(function()
+    while logo.Parent do
+        TweenService:Create(logo, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            Size = UDim2.new(0, 255, 0, 255)
+        }):Play()
+        task.wait(1.2)
+        TweenService:Create(logo, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+            Size = UDim2.new(0, 240, 0, 240)
+        }):Play()
+        task.wait(1.2)
+    end
+end)
+
+local title = Instance.new("TextLabel", centerContent)
+title.Size = UDim2.new(1, 0, 0, 60)
+title.Position = UDim2.new(0, 0, 0, 270)
+title.BackgroundTransparency = 1
+title.Text = HUB_TEXT
+title.Font = Enum.Font.GothamBold
+title.TextSize = 52
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.ZIndex = 6
+
+local titleStroke = Instance.new("UIStroke", title)
+titleStroke.Color = Color3.fromRGB(255, 0, 0)
+titleStroke.Thickness = 3
+
+local loadingLabel = Instance.new("TextLabel", centerContent)
+loadingLabel.Size = UDim2.new(1, 0, 0, 40)
+loadingLabel.Position = UDim2.new(0, 0, 0, 340)
+loadingLabel.BackgroundTransparency = 1
+loadingLabel.Font = Enum.Font.GothamMedium
+loadingLabel.TextSize = 26
+loadingLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+loadingLabel.ZIndex = 6
+loadingLabel.Text = LOADING_TEXTS[1]
+
+local loaderBg = Instance.new("Frame", centerContent)
+loaderBg.Size = UDim2.new(0, 650, 0, 20)
+loaderBg.Position = UDim2.new(0.5, 0, 0.82, 0)
+loaderBg.AnchorPoint = Vector2.new(0.5, 0.5)
+loaderBg.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+loaderBg.BorderSizePixel = 0
+loaderBg.ZIndex = 6
+Instance.new("UICorner", loaderBg).CornerRadius = UDim.new(1, 0)
+
+local loaderBgStroke = Instance.new("UIStroke", loaderBg)
+loaderBgStroke.Color = Color3.fromRGB(80, 0, 0)
+loaderBgStroke.Thickness = 2
+
+local loaderFill = Instance.new("Frame", loaderBg)
+loaderFill.Size = UDim2.new(0, 0, 1, 0)
+loaderFill.BackgroundColor3 = Color3.fromRGB(255, 30, 30)
+loaderFill.BorderSizePixel = 0
+loaderFill.ZIndex = 7
+Instance.new("UICorner", loaderFill).CornerRadius = UDim.new(1, 0)
+
+local fillGradient = Instance.new("UIGradient", loaderFill)
+fillGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(150, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 80))
+})
+
+local s = Instance.new("Sound", SoundService)
+s.SoundId = "rbxassetid://9118828569"
+s.Volume = 0.6
+s:Play()
+
+local steps = 100
+for i = 1, steps do
+    local progress = i / steps
+    TweenService:Create(loaderFill, TweenInfo.new(LOAD_TIME / steps, Enum.EasingStyle.Linear), {
+        Size = UDim2.new(progress, 0, 1, 0)
+    }):Play()
+    
+    if i % 33 == 0 then
+        local textIndex = math.clamp(math.ceil(i / 33), 1, #LOADING_TEXTS)
+        loadingLabel.Text = LOADING_TEXTS[textIndex]
+    end
+    
+    task.wait(LOAD_TIME / steps)
+end
+
+TweenService:Create(centerContent, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+    Size = UDim2.new(0, 0, 0, 0)
+}):Play()
+
+local fadeScreen = Instance.new("Frame", gui)
+fadeScreen.Size = UDim2.new(1, 0, 1, 0)
+fadeScreen.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+fadeScreen.BackgroundTransparency = 1
+fadeScreen.ZIndex = 10
+
+TweenService:Create(fadeScreen, TweenInfo.new(1), {BackgroundTransparency = 0}):Play()
+TweenService:Create(blur, TweenInfo.new(1), {Size = 0}):Play()
+
+task.wait(1.1)
+gui:Destroy()
+blur:Destroy()
+
+-- Executa o script do MM2 logo após o término do loader
+local success, err = pcall(function()
+    loadstring(game:HttpGet(MM2_SCRIPT_URL))()
+end)
+
+if not success then
+    warn("Failed to execute MM2 script: " .. tostring(err))
+    notifyRoblox("Error", "Failed to load MM2 script.", 8)
+end
